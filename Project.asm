@@ -241,12 +241,12 @@ OUTPUTNUM			;This subroutine Outputs the value stored in X
 		LDI R2, REMAINDER 
 		
 		LDI R5, COUNTERTWO			;R5 is the counting variable
-		ADD R5, R5, #1			;IF R5 == -3 put remainder in Hundreds place
-		BRz HUNDREDPL
-		ADD R5, R5, #1			;IF R5 == -2 put remainder in tensplace
-		BRz TENSPL
-		ADD R5, R5, #1			;IF R5 == 0	 Put remainder in ONESPLACE
-		BRz ONESPL
+		ADD R5, R5, #1			
+		BRz HUNDREDPL			;IF R5 == -2 put remainder in Hundreds place
+		ADD R5, R5, #1			
+		BRz TENSPL			;IF R5 == -1 put remainder in tensplace
+		ADD R5, R5, #1			
+		BRz ONESPL			;IF R5 == 0	 Put remainder in ONESPLACE
 	
 
 	ONESPL
@@ -269,10 +269,8 @@ OUTPUTNUM			;This subroutine Outputs the value stored in X
 
 OUTPUTSECTION		;This section of the subroutine outputs the values 
 					;Stored in ONESPLACE TENSPLACE and HUNDREDSPLACE 
-	AND R0, R1, #0
-	AND R1, R1, #0
-	LD R1, ASCII_SPACE
-	ADD R0, R1, #0
+	
+	LD R0, ASCII_SPACE
 	OUT	
 
 	AND R0, R1, #0
@@ -289,7 +287,6 @@ OUTPUTSECTION		;This section of the subroutine outputs the values
 	BRz OUTPUTTENS
 	
 OUTPUTHUNDREDS
-
 	AND R0, R0, #0
 	ADD R0, R3, R4
 	OUT
@@ -304,10 +301,7 @@ OUTPUTONES
 	ADD R0, R1, R4
 	OUT
 	
-	AND R0, R1, #0
-	AND R1, R1, #0
-	LD R1, ASCII_PERCENT
-	ADD R0, R1, #0
+	LD R0, ASCII_PERCENT
 	OUT	
 
 	LDI R7, SAVE7
