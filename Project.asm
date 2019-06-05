@@ -1,11 +1,17 @@
 .ORIG x3000
 
+MINSTRING	.STRINGZ "The minimum score on this exam is: "
+MAXSTRING	.STRINGZ "The maximum score on this exam is: "
+AVGSTRING	.STRINGZ "The average score on this exam is: "
+PROMPT 		.STRINGZ "Enter your 5 test scores: "
+
 JSR GETVALUES
 
-OUTPUTS ;This function takes values stored in
+OUTPUTS ;This section takes values stored in
 	;MIN, MAX, and AVG and outputs a string
 	; and the corisponding letter grade for
 	;each variable. 
+
 LEA R0, AVGSTRING	;Output average string
 PUTS
 
@@ -14,7 +20,8 @@ LDR R1, R1, #0	;Output for AVG
 STI R1, X		
 JSR LETTER		;Get value of grade using function		
 LDI R0, ASCII_OUT
-OUT			;output AVG letter grade	
+OUT			;output AVG letter grade
+JSR OUTPUTNUM	
 AND R0, R0, #0
 ADD R0, R0, #10
 OUT			;out new line
@@ -28,7 +35,8 @@ LDR R1, R1, #-1
 STI R1, X
 JSR LETTER			
 LDI R0, ASCII_OUT
-OUT			;output for max letter grade	
+OUT			;output for max letter grade
+JSR OUTPUTNUM	
 AND R0, R0, #0
 ADD R0, R0, #10
 OUT			;out new line
@@ -42,7 +50,8 @@ LDR R1, R1, #-2
 STI R1, X
 JSR LETTER			
 LDI R0, ASCII_OUT
-OUT			;output for min letter grade	
+OUT			;output for min letter grade
+JSR OUTPUTNUM	
 AND R0, R0, #0
 ADD R0, R0, #10
 OUT			;out new line
@@ -51,9 +60,7 @@ OUT			;out new line
 
 HALT
 
-
-	
-LETTER 	;This function takes a value stored in X 
+LETTER 	;This Subroutine takes a value stored in X 
 		;And returns ACII value of the letter grade in label ACII_OUT
 	STI R0, SAVER0
 	STI R1, SAVER1
@@ -217,12 +224,186 @@ LDI R7, SAVER7
 
 RET
 
+OUTPUTNUM			;This subroutine Outputs the value stored in X 
+	STI R7, SAVE7
+	LDI R1, X 		;Value being passed into subroutine for output
+	STI R1, Y		;Move value stored in X to Y
+	AND R5, R5, #0		;Counter value for loop
+	ADD R5, R5, #-3		; put counter in R5 for checking numbers place
+	STI R5, COUNTERTWO
+
+	OUTLOOP			;This loop takes the number stored in X and saves 
+					;the digits in locations ONESPLACE TENSPLACE and HUNDREDSPLACE
+		
+		JSR DIVIDE
+		LDI R3, QUOTIENT
+		STI R3, Y 
+		LDI R2, REMAINDER 
+		
+		LDI R5, COUNTERTWO			;R5 is the counting variable
+		ADD R5, R5, #1			;IF R5 == -3 put remainder in Hundreds place
+		BRz HUNDREDPL
+		ADD R5, R5, #1			;IF R5 == -2 put remainder in tensplace
+		BRz TENSPL
+		ADD R5, R5, #1			;IF R5 == 0	 Put remainder in ONESPLACE
+		BRz ONESPL
+	
+
+	ONESPL
+		ADD R5, R5, #-2
+		STI R2, ONESPLACE	;Store the remainder in onesplace
+		STI R5, COUNTERTWO
+		BR OUTLOOP
+
+	TENSPL
+		ADD R5, R5, #-1
+		STI R2, TENSPLACE	;Store remainder in tensplace
+		STI R5, COUNTERTWO
+		BR OUTLOOP
+
+	HUNDREDPL
+		STI R2, HUNDREDSPLACE	;Store remainder in hundreds place
+					;END OF LOOP
+					;Fall out of loop
+
+
+OUTPUTSECTION		;This section of the subroutine outputs the values 
+					;Stored in ONESPLACE TENSPLACE and HUNDREDSPLACE 
+	AND R0, R1, #0
+	AND R1, R1, #0
+	LD R1, ASCII_SPACE
+	ADD R0, R1, #0
+	OUT	
+
+	AND R0, R1, #0
+	AND R1, R1, #0
+	AND R2, R1, #0
+	AND R3, R1, #0
+	AND R4, R1, #0
+	LDI R1, ONESPLACE
+	LDI R2, TENSPLACE
+	LDI R3, HUNDREDSPLACE
+	LD R4, ASCII_NUMPOS
+	
+	ADD R5, R3, #0		;IF HUNDREDSPLACE == 0 do NOT output a digit in HUNDREDSPLACE
+	BRz OUTPUTTENS
+	
+OUTPUTHUNDREDS
+
+	AND R0, R0, #0
+	ADD R0, R3, R4
+	OUT
+
+OUTPUTTENS
+	AND R0, R0, #0
+	ADD R0, R2, R4
+	OUT
+
+OUTPUTONES
+	AND R0, R0, #0
+	ADD R0, R1, R4
+	OUT
+	
+	AND R0, R1, #0
+	AND R1, R1, #0
+	LD R1, ASCII_PERCENT
+	ADD R0, R1, #0
+	OUT	
+
+	LDI R7, SAVE7
+RET					;Outputted number onto the console and return
+
+
+
+
+DIVIDE
+
+
+	AND R0, R1, #0
+	AND R1, R1, #0
+	AND R2, R1, #0
+	AND R3, R1, #0
+	AND R4, R1, #0
+	AND R5, R1, #0
+	AND R6, R1, #0
+	
+	ADD R2, R2, #10		;The devisory is always 10
+	LDI R1, Y		;Load the dividend into R1
+	
+	ADD R3, R1, #0		;Load the Dividend into R3
+	BRz ZERO_QUOTIENT	;If Dividend is 0 return 0
+	BRn INVALID
+	ADD R4, R2, #0		;R2 is always 10
+	BRnz INVALID
+	NOT R4, R4
+	ADD R4, R4, #1	; negate Y for subtraction for division
+	ADD R5, R3, R4	; R5 is remainder container
+	BRn XLESSY		; If X < Y then jump to special condition
+	BRz XEQUALY		; If X equals Y then we have our answer
+	ADD R6, R6, #1		; If this is continuing through then we have already "divided" once
+	DIV_LOOP
+	ADD R5, R5, R4
+	BRn REMAINDER_EXISTS	
+	BRz	RETURN_QUOTIENT
+	ADD R6, R6, #1		; R6 is quotient
+	BR DIV_LOOP
+	; Below are outcome branches
+
+	ZERO_QUOTIENT
+	AND R6, R6, #0
+	AND R5, R5, #0
+	STI R5, REMAINDER
+	STI R6, QUOTIENT
+
+	RET
+	
+	INVALID
+	RET
+	
+	XLESSY
+	AND R6, R6, #0
+	ADD R5, R1, #0	; X is your remainder
+	STI R5, REMAINDER	;STORE Remainder in remainder
+	STI R6, QUOTIENT
+	RET
+	
+	XEQUALY
+	AND R6, R6, #0
+	ADD R6, R6, #1
+	AND R5, R5, #0
+	STI R5, REMAINDER
+	STI R6, QUOTIENT
+	RET
+	
+	REMAINDER_EXISTS
+	ADD R5, R5, R2
+	STI R5, REMAINDER
+	STI R6, QUOTIENT
+	RET
+	
+	RETURN_QUOTIENT
+	ADD R6, R6, #1
+	STI R5, REMAINDER
+	STI R6, QUOTIENT
+	RET						;END OF DIVISION SUBROUTINE 
+
 ; Data
 CALCVALUES .FILL x4000
 X		.FILL x4004
 ASCII_OUT	.FILL x4005
 ASCII_F		.FILL #70
 
+ASCII_NUMPOS		.FILL #48		;Variables for OUTPUTNUM subroutine and divide subroutine
+ASCII_SPACE		.FILL #32
+ASCII_PERCENT		.FILL #37
+REMAINDER		.FILL x4050
+QUOTIENT		.FILL x4051
+Y			.FILL x4053
+COUNTERTWO		.FILL x4054
+ONESPLACE		.FILL x4055
+TENSPLACE		.FILL x4056
+HUNDREDSPLACE		.FILL x4107
+SAVE7			.FILL x0
 
 SAVER0 .FILL x3F00
 SAVER1 .FILL x3F01
@@ -240,10 +421,6 @@ NUM_5 .FILL #5
 MIN .FILL #101
 MAX .FILL #0
 AVG .FILL #0
-MINSTRING	.STRINGZ "The minimum score on this exam is: "
-MAXSTRING	.STRINGZ "The maximum score on this exam is: "
-AVGSTRING	.STRINGZ "The average score on this exam is: "
-PROMPT .STRINGZ "Enter your 5 test scores: "
 
 
 .END
