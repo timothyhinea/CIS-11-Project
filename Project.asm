@@ -109,7 +109,9 @@ LETTER 	;This function takes a value stored in X
  RET	;END OF LETTER FUNCTION
 
 	
-
+; This subroutine is intended to read in 5 test scores
+; while simultaneously comparing for minimum and maximum values
+; and calculating the average score.
 GETVALUES
 STI R0, SAVER0
 STI R1, SAVER1
@@ -120,42 +122,47 @@ STI R5, SAVER5
 STI R6, SAVER6
 STI R7, SAVER7
 
+; Output prompt asking for 5 test scores
 LEA R0, PROMPT
 PUTS
 
 AND R0, R0, #0
 
+; Counter for 5 test scores
 LD R5, NUM_5
 
+; Start of getting a single test score
 NEXT_NUM
 AND R1, R1, #0
-LD R3, ASCII_NUM
+LD R3, ASCII_NUM ; ASCII offset for char to int conversion
 
+; We grab teh score one digit at a time understanding that the
+; first digit is the left most one in the number
 GET_DIGIT
 GETC
 OUT
-ADD R0, R0, R3
-BRn END_OF_NUM
+ADD R0, R0, R3	; If the entry is not a numeric value (specifically an new line character)
+BRn END_OF_NUM  ; then we have gotten on entire score and proceed to check if we need to get another.
 ADD R1, R1, #0
-BRz FIRST_DIGIT
-LD R2, NUM_10
+BRz FIRST_DIGIT	; If this is the first digit entered we can skip some work
+LD R2, NUM_10	; Otherwise we multiply the existing score by 10 so we can append the new digit
 ADD R4, R1, #0
-MULT_TEN
+MULT_TEN	; Multiply by 10 loop (add to itself 10 times)
 ADD R1, R1, R4
 ADD R2, R2, #-1
 BRp MULT_TEN
 
 FIRST_DIGIT
 ADD R1, R1, R0
-ST R1, INPUT
-BR GET_DIGIT
+ST R1, INPUT	; Store what we currently have as the input
+BR GET_DIGIT	; Jump back to get the next digit or be told it is the end of the score
 
 END_OF_NUM
-LD R4, AVG
+LD R4, AVG	; Add score to the rest for eventual computing of average
 ADD R4, R4, R1
 ST R4, AVG
 
-LD R2, MIN
+LD R2, MIN	; Compare score to min and max values, to see if any replacements need to be made
 LD R3, MAX
 ST R5, COUNTER
 NOT R5, R1
@@ -169,23 +176,23 @@ BRzp SKIP2
 ST R1, MAX
 SKIP2
 
-LD R5, COUNTER
+LD R5, COUNTER	; decrement score counter
 ADD R5,R5, #-1
-BRp NEXT_NUM
+BRp NEXT_NUM	; Go to get next score
 
-LD R0, AVG
-LD R1, NUM_5
+LD R0, AVG	; Prep for calculating average
+LD R1, NUM_5	; Reuse a variable and take its 2's compelement to save on label declarations
 NOT R1, R1
 ADD R1, R1, #1
 AND R2, R2, #0
 
-DIVISION_LOOP
+DIVISION_LOOP	; Divide the sum of the scores by 5 to get average
 ADD R0, R0, R1
 BRn EXIT
 ADD R2, R2, #1
 BR DIVISION_LOOP
 
-EXIT
+EXIT		; Store values in a stack
 ST R2, AVG
 LD R1, CALCVALUES
 LD R2, MIN
@@ -210,6 +217,7 @@ LDI R7, SAVER7
 
 RET
 
+; Data
 CALCVALUES .FILL x4000
 X		.FILL x4004
 ASCII_OUT	.FILL x4005
