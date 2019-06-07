@@ -60,6 +60,12 @@ OUT			;out new line
 
 HALT
 
+; Data that needs to be here to be in reach of instructions
+CALCVALUES .FILL x4000
+X		.FILL x4004
+ASCII_OUT	.FILL x4005
+ASCII_F		.FILL #70
+
 LETTER 	;This Subroutine takes a value stored in X 
 		;And returns ACII value of the letter grade in label ACII_OUT
 	STI R0, SAVER0
@@ -137,6 +143,11 @@ AND R0, R0, #0
 
 ; Counter for 5 test scores
 LD R5, NUM_5
+BR NEXT_NUM ; skip the error message that will be output if score > MAX_GRADE
+SCORE_ERROR
+LEA R0, INPUT_ERROR
+PUTS
+AND R0, R0, #0
 
 ; Start of getting a single test score
 NEXT_NUM
@@ -165,6 +176,12 @@ ST R1, INPUT	; Store what we currently have as the input
 BR GET_DIGIT	; Jump back to get the next digit or be told it is the end of the score
 
 END_OF_NUM
+
+;Check for score that exceeds our arbitrary max (to change alter MAX_GRADE)
+LD R4, MAX_GRADE
+ADD R4, R1, R4
+BRp SCORE_ERROR
+
 LD R4, AVG	; Add score to the rest for eventual computing of average
 ADD R4, R4, R1
 ST R4, AVG
@@ -241,12 +258,12 @@ OUTPUTNUM			;This subroutine Outputs the value stored in X
 		LDI R2, REMAINDER 
 		
 		LDI R5, COUNTERTWO			;R5 is the counting variable
-		ADD R5, R5, #1			
-		BRz HUNDREDPL			;IF R5 == -2 put remainder in Hundreds place
-		ADD R5, R5, #1			
-		BRz TENSPL			;IF R5 == -1 put remainder in tensplace
-		ADD R5, R5, #1			
-		BRz ONESPL			;IF R5 == 0	 Put remainder in ONESPLACE
+		ADD R5, R5, #1			;IF R5 == -3 put remainder in Hundreds place
+		BRz HUNDREDPL
+		ADD R5, R5, #1			;IF R5 == -2 put remainder in tensplace
+		BRz TENSPL
+		ADD R5, R5, #1			;IF R5 == 0	 Put remainder in ONESPLACE
+		BRz ONESPL
 	
 
 	ONESPL
@@ -269,8 +286,10 @@ OUTPUTNUM			;This subroutine Outputs the value stored in X
 
 OUTPUTSECTION		;This section of the subroutine outputs the values 
 					;Stored in ONESPLACE TENSPLACE and HUNDREDSPLACE 
-	
-	LD R0, ASCII_SPACE
+	AND R0, R1, #0
+	AND R1, R1, #0
+	LD R1, ASCII_SPACE
+	ADD R0, R1, #0
 	OUT	
 
 	AND R0, R1, #0
@@ -287,6 +306,7 @@ OUTPUTSECTION		;This section of the subroutine outputs the values
 	BRz OUTPUTTENS
 	
 OUTPUTHUNDREDS
+
 	AND R0, R0, #0
 	ADD R0, R3, R4
 	OUT
@@ -301,7 +321,10 @@ OUTPUTONES
 	ADD R0, R1, R4
 	OUT
 	
-	LD R0, ASCII_PERCENT
+	AND R0, R1, #0
+	AND R1, R1, #0
+	LD R1, ASCII_PERCENT
+	ADD R0, R1, #0
 	OUT	
 
 	LDI R7, SAVE7
@@ -382,10 +405,6 @@ DIVIDE
 	RET						;END OF DIVISION SUBROUTINE 
 
 ; Data
-CALCVALUES .FILL x4000
-X		.FILL x4004
-ASCII_OUT	.FILL x4005
-ASCII_F		.FILL #70
 
 ASCII_NUMPOS		.FILL #48		;Variables for OUTPUTNUM subroutine and divide subroutine
 ASCII_SPACE		.FILL #32
@@ -415,6 +434,6 @@ NUM_5 .FILL #5
 MIN .FILL #101
 MAX .FILL #0
 AVG .FILL #0
-
-
+MAX_GRADE .FILL #-125
+INPUT_ERROR .STRINGZ "Grade exceeds max of 125%, please input a valid grade: "
 .END
